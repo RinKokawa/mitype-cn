@@ -69,6 +69,9 @@ class App:
         # mode = 0 when in test
         # mode = 1 when in replay
         self.mode = 0
+        
+        # 语言设置
+        self.language = "zh" if any(ord(c) > 127 for c in self.text) else "en"
 
         self.window_height = 0
         self.window_width = 0
@@ -111,6 +114,9 @@ class App:
         """
         # Initialize windows
         self.initialize(win)
+        
+        # 每次开始时选择模式
+        self.select_mode(win)
 
         while True:
             # Typing mode
@@ -125,6 +131,18 @@ class App:
 
                 if is_right_arrow_key(key):
                     self.switch_text(win, 1)
+                    
+                # 添加模式切换快捷键
+                if key == "1":
+                    self.mode = 0
+                    self.reset_test()
+                    self.setup_print(win)
+                    self.update_state(win)
+                elif key == "2":
+                    self.mode = 1
+                    self.reset_test()
+                    self.setup_print(win)
+                    self.update_state(win)
 
             # Test mode
             if self.mode == 0:
@@ -135,6 +153,7 @@ class App:
                 # Tab to retry last test
                 if is_tab(key):
                     win.clear()
+                    self.select_mode(win)  # 重试时重新选择模式
                     self.reset_test()
                     self.setup_print(win)
                     self.update_state(win)
@@ -294,7 +313,6 @@ class App:
             self.accuracy = accuracy(self.total_chars_typed, wrongly_typed_chars)
             self.time_taken = get_elapsed_minutes_since_first_keypress(self.start_time)
 
-            self.mode = 1
             # Find time difference between the key strokes
             # The key_strokes list is storing the time at which the key is pressed
             for index in range(len(self.key_strokes) - 1, 0, -1):
@@ -302,36 +320,84 @@ class App:
 
             self.key_strokes[0][0] = 0
 
-        win.addstr(self.number_of_lines_to_print_text, 0, " Your typing speed is ")
-        win.addstr(" " + self.current_speed_wpm + " ", self.Color.MAGENTA)
-        win.addstr(" WPM ")
+        if self.language == "zh":
+            win.addstr(self.number_of_lines_to_print_text, 0, " 您的打字速度是 ")
+            win.addstr(" " + self.current_speed_wpm + " ", self.Color.MAGENTA)
+            win.addstr(" WPM ")
 
-        win.addstr(
-            self.number_of_lines_to_print_text + 2,
-            1,
-            " Enter ",
-            self.Color.BLACK,
-        )
-        win.addstr(" to see replay, ")
+            win.addstr(
+                self.number_of_lines_to_print_text + 2,
+                1,
+                " Enter ",
+                self.Color.BLACK,
+            )
+            win.addstr(" 查看回放, ")
 
-        win.addstr(" Tab ", self.Color.BLACK)
-        win.addstr(" to retry.")
+            win.addstr(" Tab ", self.Color.BLACK)
+            win.addstr(" 重新开始.")
 
-        win.addstr(
-            self.number_of_lines_to_print_text + 3,
-            1,
-            " Arrow keys ",
-            self.Color.BLACK,
-        )
-        win.addstr(" to change text.")
+            win.addstr(
+                self.number_of_lines_to_print_text + 3,
+                1,
+                " 方向键 ",
+                self.Color.BLACK,
+            )
+            win.addstr(" 切换文本.")
 
-        win.addstr(
-            self.number_of_lines_to_print_text + 4,
-            1,
-            " CTRL+T ",
-            self.Color.BLACK,
-        )
-        win.addstr(" to tweet result.")
+            win.addstr(
+                self.number_of_lines_to_print_text + 4,
+                1,
+                " CTRL+T ",
+                self.Color.BLACK,
+            )
+            win.addstr(" 分享结果.")
+            
+            win.addstr(
+                self.number_of_lines_to_print_text + 5,
+                1,
+                " 1/2 ",
+                self.Color.BLACK,
+            )
+            win.addstr(" 切换模式.")
+        else:
+            win.addstr(self.number_of_lines_to_print_text, 0, " Your typing speed is ")
+            win.addstr(" " + self.current_speed_wpm + " ", self.Color.MAGENTA)
+            win.addstr(" WPM ")
+
+            win.addstr(
+                self.number_of_lines_to_print_text + 2,
+                1,
+                " Enter ",
+                self.Color.BLACK,
+            )
+            win.addstr(" to see replay, ")
+
+            win.addstr(" Tab ", self.Color.BLACK)
+            win.addstr(" to retry.")
+
+            win.addstr(
+                self.number_of_lines_to_print_text + 3,
+                1,
+                " Arrow keys ",
+                self.Color.BLACK,
+            )
+            win.addstr(" to change text.")
+
+            win.addstr(
+                self.number_of_lines_to_print_text + 4,
+                1,
+                " CTRL+T ",
+                self.Color.BLACK,
+            )
+            win.addstr(" to tweet result.")
+            
+            win.addstr(
+                self.number_of_lines_to_print_text + 5,
+                1,
+                " 1/2 ",
+                self.Color.BLACK,
+            )
+            win.addstr(" to switch mode.")
 
         self.print_stats(win)
 
@@ -653,3 +719,33 @@ class App:
         else:
             self.current_word += " "
             self.current_string += " "
+
+    def select_mode(self, win):
+        """让用户选择模式。
+
+        Args:
+            win (any): Curses window object.
+        """
+        win.clear()
+        if self.language == "zh":
+            win.addstr(0, 0, "请选择模式：", self.Color.CYAN)
+            win.addstr(2, 0, "1. 测试模式 - 开始新的打字测试", self.Color.GREEN)
+            win.addstr(3, 0, "2. 重放模式 - 查看上次测试的回放", self.Color.YELLOW)
+            win.addstr(5, 0, "按对应数字键选择模式...", self.Color.MAGENTA)
+        else:
+            win.addstr(0, 0, "Select mode:", self.Color.CYAN)
+            win.addstr(2, 0, "1. Test mode - Start a new typing test", self.Color.GREEN)
+            win.addstr(3, 0, "2. Replay mode - View replay of last test", self.Color.YELLOW)
+            win.addstr(5, 0, "Press corresponding number key to select mode...", self.Color.MAGENTA)
+        win.refresh()
+        
+        while True:
+            key = self.keyinput(win)
+            if key == "1":
+                self.mode = 0
+                break
+            elif key == "2":
+                self.mode = 1
+                break
+            elif is_escape(key) or is_ctrl_c(key):
+                sys.exit(0)

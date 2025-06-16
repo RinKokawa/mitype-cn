@@ -33,13 +33,13 @@ def resolve_commandline_arguments():
         text, text_id = load_text_from_file(opt.file)
 
     elif opt.id:
-        text, text_id = load_from_database(opt.id)
+        text, text_id = load_from_database(opt.id, opt.language)
 
     elif opt.difficulty is not None:
-        text, text_id = load_based_on_difficulty(opt.difficulty)
+        text, text_id = load_based_on_difficulty(opt.difficulty, opt.language)
 
     else:
-        text, text_id = load_based_on_difficulty()
+        text, text_id = load_based_on_difficulty(language=opt.language)
 
     return text, text_id
 
@@ -98,6 +98,15 @@ def parse_arguments():
         type=int,
         help="Show mitype score history",
     )
+    
+    parser.add_argument(
+        "-l",
+        "--language",
+        metavar="LANG",
+        default="en",
+        choices=["en", "zh"],
+        help="Choose language (en: English, zh: Chinese)",
+    )
 
     return parser.parse_args()
 
@@ -126,25 +135,26 @@ def load_text_from_file(file_path):
     sys.exit(0)
 
 
-def load_from_database(text_id):
+def load_from_database(text_id, language="en"):
     """Load given text from database with given id.
 
     Args:
         text_id (int): Row identifier of database text to load.
+        language (str): Language of the text to load ("en" or "zh").
 
     Returns:
         (str, int): Tuple of text content followed by DB row identifier.
     """
     row_count = 6000
     if 1 <= text_id <= row_count:
-        text = mitype.database.fetch_text_from_id(text_id)
+        text = mitype.database.fetch_text_from_id(text_id, language)
         return text, text_id
 
     print("ID must be in range [1,6000]")
     sys.exit(1)
 
 
-def load_based_on_difficulty(difficulty_level=random.randrange(1, 6)):
+def load_based_on_difficulty(difficulty_level=random.randrange(1, 6), language="en"):
     """
     Load text of given difficulty from database if parameter is passed.
 
@@ -152,6 +162,7 @@ def load_based_on_difficulty(difficulty_level=random.randrange(1, 6)):
 
     Args:
         difficulty_level (int): difficulty level in a range of 1 - 5
+        language (str): Language of the text to load ("en" or "zh").
 
     Returns:
         (str, int): Tuple of text content followed by DB row identifier.
@@ -164,7 +175,7 @@ def load_based_on_difficulty(difficulty_level=random.randrange(1, 6)):
         lower_limit = upper_limit - 1200 + 1
 
         text_id = random.randrange(lower_limit, upper_limit + 1)
-        text = mitype.database.fetch_text_from_id(text_id)
+        text = mitype.database.fetch_text_from_id(text_id, language)
 
         return text, text_id
 
